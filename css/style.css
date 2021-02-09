@@ -1,0 +1,24 @@
+*{
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.searchbar{
+  width: 100%;
+  padding: 40px 0;
+  display: flex;
+  justify-content: space-around;
+  align-content: space-between;
+}
+
+main{
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+}
+
+.film-box{
+  width: 200px;
+  margin-bottom: 15px;
+}

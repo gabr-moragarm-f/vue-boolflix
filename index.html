@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boolfix</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+</head>
+<body>
+  <div id="root">
+    <div class="searchbar">
+      <input type="text" name="" v-model="userSearchInput">
+
+      <button @click="searchMovie" type="button" name="button">Search</button>
+    </div>
+
+    <main>
+      <div v-for="item in searchResult" class="film-box">
+        <h2>{{item.title}}</h2>
+
+        <h3>{{item.original_title}}</h3>
+
+        <div class="language">
+          {{item.original_language}}
+        </div>
+
+        <div class="vote">
+          {{item.vote_average}}
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/script.js" charset="utf-8"></script>
+</body>
+</html>
