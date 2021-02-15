@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Boolfix</title>
   <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js"></script>
@@ -20,7 +20,19 @@
         </div>
 
         <div class="searchbar">
-          <input @keyup.enter="searchMoviesAndShows" type="text" name="" v-model="userSearchInput">
+          <select v-model="optionGenreFilter">
+            <option value="">All Movies and Shows</option>
+
+            <option v-for="option in movieGenres" :value="option.id">
+              {{option.name}} Movies
+            </option>
+
+            <option v-for="option in showGenres" :value="option.id">
+              {{option.name}} Shows
+            </option>
+          </select>
+
+          <input @keyup.enter="searchMoviesAndShows" type="text" v-model="userSearchInput" placeholder="Search a film or show">
 
           <div @click="searchMoviesAndShows" class="search-btn">
             <i class="fas fa-search"></i>
@@ -29,28 +41,75 @@
       </header>
 
       <main>
+        <h1 v-if="lastSearch">
+          Search results for "{{lastSearch}}"
+        </h1>
+
+        <h2 v-if="noResults">There are no results for this search</h2>
+
         <h2 v-if="searchResultMovie.length > 0">Movies results</h2>
 
-        <div class="movie-search-result-box">
-          <div v-for="item in searchResultMovie" class="film-box">
+        <div class="movie-search-result-box row">
+          <div v-if="filterForGenre(item.genre_ids)" @mouseleave="filmCast = []" v-for="item in searchResultMovie" class="film-box">
             <div class="poster">
-              <img :src="'https://image.tmdb.org/t/p/w342/' + item.poster_path" alt="">
-            </div>
-            <h3>{{item.title}}</h3>
+              <img v-if="item.poster_path === null" src="https://via.placeholder.com/342x513.png?text=Poster+not+avaiable" :alt="'poster' + item.title">
 
-            <h4>{{item.original_title}}</h4>
-
-            <div class="language">
-              <img :src="'img/flags/' + item.original_language + '.png'" :alt="item.original_language">
+              <img v-else :src="'https://image.tmdb.org/t/p/w342/' + item.poster_path" :alt="'poster' + item.title">
             </div>
 
-            <div class="vote">
-              <div v-for="n in voteToStars(item.vote_average)" class="">
-                <i class="fas fa-star" aria-hidden="true"></i>
+            <div class="film-details">
+              <h3>{{item.title}}</h3>
+
+              <h4 v-if="item.title !== item.original_title">
+                <h5>Original title:</h5> {{item.original_title}}
+              </h4>
+
+              <div class="language">
+                <img :src="'img/flags/' + item.original_language + '.png'" :alt="item.original_language">
               </div>
 
-              <div v-for="n in (5 - voteToStars(item.vote_average))" class="">
-                <i class="far fa-star" aria-hidden="true"></i>
+              <div class="overview">
+                <h5>Overview:</h5>
+
+                {{item.overview}}
+              </div>
+
+              <div class="genres-box">
+                <h5>Genres: </h5>
+
+                <div v-for="id in item.genre_ids">
+                  {{movieIdToGenre(id)}}
+                </div>
+              </div>
+
+              <div class="vote">
+                <h5>Vote:</h5>
+
+                <div v-for="n in voteToStars(item.vote_average)">
+                  <i class="fas fa-star" aria-hidden="true"></i>
+                </div>
+
+                <div v-for="n in (5 - voteToStars(item.vote_average))">
+                  <i class="far fa-star" aria-hidden="true"></i>
+                </div>
+              </div>
+
+              <div @click="getMovieCast(item.id)" v-if="filmCast.length === 0" class="cast-btn">
+                View the cast of this film
+              </div>
+
+              <div v-if="filmCast.length > 0" class="cast">
+                <h5>Cast:</h5>
+
+                <div v-for="element in filmCast" class="cast-member">
+                  <div class="profile-img">
+                    <img v-if="element.profile_path === null" src="https://via.placeholder.com/185.png?text=Image+not+avaiable" :alt="'Image' + element.original_name">
+
+                    <img v-else :src="'https://image.tmdb.org/t/p/w185/' + element.profile_path" :alt="'Image' + element.original_name">
+                  </div>
+
+                  <span>{{element.original_name}}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -58,27 +117,67 @@
 
         <h2 v-if="searchResultShows.length > 0">TV shows results</h2>
 
-        <div class="shows-search-result-box">
-          <div v-for="item in searchResultShows" class="film-box">
+        <div class="shows-search-result-box row">
+          <div v-if="filterForGenre(item.genre_ids)" @mouseleave="showCast = []" v-for="item in searchResultShows" class="film-box">
             <div class="poster">
-              <img :src="'https://image.tmdb.org/t/p/w342/' + item.poster_path" alt="">
+              <img v-if="item.poster_path === null" src="https://via.placeholder.com/342x513.png?text=Poster+not+avaiable" :alt="'poster' + item.name">
+
+              <img v-else :src="'https://image.tmdb.org/t/p/w342/' + item.poster_path" :alt="'poster' + item.name">
             </div>
 
-            <h3>{{item.name}}</h3>
+            <div class="film-details">
+              <h3>{{item.name}}</h3>
 
-            <h4>{{item.original_name}}</h4>
+              <h4 v-if="item.name !== item.original_name">
+                <h5>Original name:</h5> {{item.original_name}}
+              </h4>
 
-            <div class="language">
-              <img :src="'img/flags/' + item.original_language + '.png'" :alt="item.original_language">
-            </div>
-
-            <div class="vote">
-              <div v-for="n in voteToStars(item.vote_average)" class="">
-                <i class="fas fa-star" aria-hidden="true"></i>
+              <div class="language">
+                <img :src="'img/flags/' + item.original_language + '.png'" :alt="item.original_language">
               </div>
 
-              <div v-for="n in (5 - voteToStars(item.vote_average))" class="">
-                <i class="far fa-star" aria-hidden="true"></i>
+              <div class="overview">
+                <h5>Overview:</h5>
+
+                {{item.overview}}
+              </div>
+
+              <div class="genres-box">
+                <h5>Genres: </h5>
+
+                <div v-for="id in item.genre_ids">
+                  {{showIdToGenre(id)}}
+                </div>
+              </div>
+
+              <div class="vote">
+                <h5>Vote:</h5>
+
+                <div v-for="n in voteToStars(item.vote_average)">
+                  <i class="fas fa-star" aria-hidden="true"></i>
+                </div>
+
+                <div v-for="n in (5 - voteToStars(item.vote_average))">
+                  <i class="far fa-star" aria-hidden="true"></i>
+                </div>
+              </div>
+
+              <div @click="getShowCast(item.id)" v-if="showCast.length === 0" class="cast-btn">
+                View the cast of this film
+              </div>
+
+              <div v-if="showCast.length > 0" class="cast">
+                <h5>Cast:</h5>
+
+                <div v-for="element in showCast" class="cast-member">
+                  <div class="profile-img">
+                    <img v-if="element.profile_path === null" src="https://via.placeholder.com/185.png?text=Image+not+avaiable" :alt="'Image' + element.original_name">
+
+                    <img v-else :src="'https://image.tmdb.org/t/p/w185/' + element.profile_path" :alt="'Image' + element.original_name">
+                  </div>
+
+                  <span>{{element.original_name}}</span>
+                </div>
               </div>
             </div>
           </div>
